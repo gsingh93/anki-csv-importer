@@ -1,0 +1,3 @@
+requests==2.23.0
+anki==2.1.24
+ankirspy==2.1.24 # This is required by the `anki` package but isn't installed automatically
