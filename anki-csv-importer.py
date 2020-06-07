@@ -77,6 +77,9 @@ def send_to_anki_connect(
                 }
                 notes.append(note)
 
+    # Create the deck, if it already exists this will not overwrite it
+    invoke_ac('createDeck', deck=deck_name)
+
     # See which notes can be added
     result = invoke_ac('canAddNotes', notes=notes)
 
