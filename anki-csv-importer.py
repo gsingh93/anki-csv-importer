@@ -63,9 +63,7 @@ def send_to_anki_connect(
                 for j, field_value in enumerate(row):
                     field_name = index_to_field_name[j]
                     if field_name.lower() == 'tags':
-                        # Tags are comma separated values. We don't support
-                        # commas in tags
-                        tags = field_value.split(',')
+                        tags = field_value.split(' ')
                     else:
                         fields[field_name] = field_value
 
@@ -108,8 +106,9 @@ def send_to_anki_connect(
         find_note_actions.append(make_ac_request('findNotes', query=query))
     find_note_results = invoke_multi_ac(find_note_actions)
 
-    # Add IDs to notes
-    update_note_fields_actions = []
+    # Get list of multi actions to update note fields, add new tags,
+    # and get note info
+    actions = []
     for i, n in enumerate(notes_to_update):
         front = n['fields']['Front']
         find_note_result = find_note_results[i]
@@ -122,12 +121,40 @@ def send_to_anki_connect(
             print('[W] Duplicate notes are not supported, '
                   'skipping note with front "{}"'.format(front))
             continue
-        n['id'] = find_note_result[0]
-        update_note_fields_actions.append(
-            make_ac_request('updateNoteFields', note=n))
 
-    # Update notes
-    invoke_multi_ac(update_note_fields_actions)
+        # The updateNoteFields parameter is the same as the addNote parameter
+        # but with an additional ID field
+        n['id'] = find_note_result[0]
+        actions.append(make_ac_request('updateNoteFields', note=n))
+
+        actions.append(make_ac_request('notesInfo', notes=[n['id']]))
+        actions.append(
+            make_ac_request(
+                'addTags',
+                notes=[n['id']],
+                tags=' '.join(n['tags'])))
+
+    # Update notes, add tags, and get note info
+    note_info_results = [res for res in invoke_multi_ac(actions) if res is not None]
+
+    # Iterate through note info results to find existing tags, then create
+    # actions to remove the deleted ones
+    remove_tags_actions = []
+    for i, n in enumerate(notes_to_update):
+        note_info_result = note_info_results[i]
+        assert(len(note_info_result) == 1)
+
+        existing_tags = note_info_result[0]['tags']
+        tags_to_remove = list(set(existing_tags) - set(n['tags']))
+
+        remove_tags_actions.append(
+            make_ac_request(
+                'removeTags',
+                notes=[n['id']],
+                tags=' '.join(tags_to_remove)))
+
+    # Remove deleted tags
+    invoke_multi_ac(remove_tags_actions)
 
 
 def download_csv(sheet_url):
