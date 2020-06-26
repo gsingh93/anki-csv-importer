@@ -113,8 +113,12 @@ def send_to_anki_connect(
     for i, n in enumerate(notes_to_update):
         front = n['fields']['Front']
         find_note_result = find_note_results[i]
-        assert(len(find_note_result) != 0)
-        if len(find_note_result) > 1:
+        if len(find_note_result) == 0:
+            print('[W] Did not find any results for note with front "{}", '
+                  'skipping. This is likely a bug, '
+                  'please report this to the developer'.format(front))
+            continue
+        elif len(find_note_result) > 1:
             print('[W] Duplicate notes are not supported, '
                   'skipping note with front "{}"'.format(front))
             continue
