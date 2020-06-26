@@ -26,9 +26,13 @@ def make_ac_request(action, **params):
 
 
 def invoke_ac(action, **params):
-    # TODO: Gracefully handle connection error
     requestJson = make_ac_request(action, **params)
-    response = requests.post(ANKI_CONNECT_URL, json=requestJson).json()
+    try:
+        response = requests.post(ANKI_CONNECT_URL, json=requestJson).json()
+    except requests.exceptions.ConnectionError:
+        print('[E] Failed to connect to AnkiConnect, make sure Anki is running')
+        exit(1)
+
     return parse_ac_response(response)
 
 
