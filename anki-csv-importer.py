@@ -99,13 +99,9 @@ def send_to_anki_connect(
     # Find the IDs of the existing notes
     find_note_actions = []
     for n in notes_to_update:
-        front = n['fields']['Front']
-        find_note_actions.append(
-            make_ac_request(
-                'findNotes',
-                query='deck:"{}" front:"{}"'.format(
-                    n['deckName'],
-                    front)))
+        front = n['fields']['Front'].replace('"', '\\"')
+        query = 'deck:"{}" "front:{}"'.format(n['deckName'], front)
+        find_note_actions.append(make_ac_request('findNotes', query=query))
     find_note_results = invoke_multi_ac(find_note_actions)
 
     # Add IDs to notes
