@@ -44,11 +44,7 @@ def invoke_multi_ac(multi_actions):
     return results
 
 
-def send_to_anki_connect(
-        csv_path,
-        deck_name,
-        note_type):
-    # TODO: Audio, images
+def csv_to_ac_notes(csv_path, deck_name, note_type):
     notes = []
     index_to_field_name = {}
     with open(csv_path) as csvfile:
@@ -79,10 +75,10 @@ def send_to_anki_connect(
                 }
                 notes.append(note)
 
-    # Create the deck, if it already exists this will not overwrite it
-    invoke_ac('createDeck', deck=deck_name)
+    return notes
 
-    # See which notes can be added
+
+def get_ac_add_and_update_note_lists(notes):
     result = invoke_ac('canAddNotes', notes=notes)
 
     notes_to_add = []
@@ -93,24 +89,14 @@ def send_to_anki_connect(
         else:
             notes_to_update.append(notes[i])
 
-    print('[+] Adding {} new notes and updating {} existing notes'.format(
-        len(notes_to_add),
-        len(notes_to_update)))
-    invoke_ac('addNotes', notes=notes_to_add)
+    return notes_to_add, notes_to_update
 
-    # Find the IDs of the existing notes
-    find_note_actions = []
-    for n in notes_to_update:
-        front = n['fields']['Front'].replace('"', '\\"')
-        query = 'deck:"{}" "front:{}"'.format(n['deckName'], front)
-        find_note_actions.append(make_ac_request('findNotes', query=query))
-    find_note_results = invoke_multi_ac(find_note_actions)
 
-    # Get list of multi actions to update note fields, add new tags,
-    # and get note info
+def ac_update_notes_and_get_note_info(notes_to_update, find_note_results):
     actions = []
     for i, n in enumerate(notes_to_update):
         front = n['fields']['Front']
+
         find_note_result = find_note_results[i]
         if len(find_note_result) == 0:
             print('[W] Did not find any results for note with front "{}", '
@@ -134,11 +120,11 @@ def send_to_anki_connect(
                 notes=[n['id']],
                 tags=' '.join(n['tags'])))
 
-    # Update notes, add tags, and get note info
-    note_info_results = [res for res in invoke_multi_ac(actions) if res is not None]
+    # Only the results for note info are not none
+    return [res for res in invoke_multi_ac(actions) if res is not None]
 
-    # Iterate through note info results to find existing tags, then create
-    # actions to remove the deleted ones
+
+def ac_remove_tags(notes_to_update, note_info_results):
     remove_tags_actions = []
     for i, n in enumerate(notes_to_update):
         note_info_result = note_info_results[i]
@@ -153,8 +139,41 @@ def send_to_anki_connect(
                 notes=[n['id']],
                 tags=' '.join(tags_to_remove)))
 
-    # Remove deleted tags
     invoke_multi_ac(remove_tags_actions)
+
+
+def send_to_anki_connect(
+        csv_path,
+        deck_name,
+        note_type):
+    # TODO: Audio, images
+    notes = csv_to_ac_notes(csv_path, deck_name, note_type)
+
+    # Create the deck, if it already exists this will not overwrite it
+    invoke_ac('createDeck', deck=deck_name)
+
+    # See which notes can be added
+    notes_to_add, notes_to_update = get_ac_add_and_update_note_lists(notes)
+
+    print('[+] Adding {} new notes and updating {} existing notes'.format(
+        len(notes_to_add),
+        len(notes_to_update)))
+    invoke_ac('addNotes', notes=notes_to_add)
+
+    # Find the IDs of the existing notes
+    find_note_actions = []
+    for n in notes_to_update:
+        front = n['fields']['Front'].replace('"', '\\"')
+        query = 'deck:"{}" "front:{}"'.format(n['deckName'], front)
+        find_note_actions.append(make_ac_request('findNotes', query=query))
+    find_note_results = invoke_multi_ac(find_note_actions)
+
+    # Update notes and get the note info so we can remove old tags
+    note_info_results = ac_update_notes_and_get_note_info(
+        notes_to_update, find_note_results)
+
+    print('[+] Removing deleted tags from notes')
+    ac_remove_tags(notes_to_update, note_info_results)
 
 
 def download_csv(sheet_url):
