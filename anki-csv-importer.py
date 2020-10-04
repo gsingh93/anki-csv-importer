@@ -120,8 +120,19 @@ def ac_update_notes_and_get_note_info(notes_to_update, find_note_results):
                 notes=[n['id']],
                 tags=' '.join(n['tags'])))
 
-    # Only the results for note info are not none
-    return [res for res in invoke_multi_ac(actions) if res is not None]
+    # Only the results for note info are not None
+    note_info_results = [res for res in invoke_multi_ac(actions) if res is not None]
+
+    # We need the note info result for a note to be at the same index in
+    # note_info_results as the index of the note in notes_to_update. However,
+    # because we may skip notes that are not found or are duplicates, there may
+    # not be a result for a note and thus the indices may not match. Removing
+    # all notes where we did not set an 'id' field should cause the IDs to match
+    # up again.
+    new_notes_to_update = [n for n in notes_to_update if 'id' in n]
+
+    assert len(note_info_results) == len(new_notes_to_update)
+    return new_notes_to_update, note_info_results
 
 
 def ac_remove_tags(notes_to_update, note_info_results):
@@ -169,11 +180,11 @@ def send_to_anki_connect(
     find_note_results = invoke_multi_ac(find_note_actions)
 
     # Update notes and get the note info so we can remove old tags
-    note_info_results = ac_update_notes_and_get_note_info(
+    new_notes_to_update, note_info_results = ac_update_notes_and_get_note_info(
         notes_to_update, find_note_results)
 
     print('[+] Removing deleted tags from notes')
-    ac_remove_tags(notes_to_update, note_info_results)
+    ac_remove_tags(new_notes_to_update, note_info_results)
 
 
 def download_csv(sheet_url):
