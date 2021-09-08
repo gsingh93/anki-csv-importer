@@ -158,6 +158,11 @@ def send_to_anki_connect(
         deck_name,
         note_type):
     # TODO: Audio, images
+
+    # If deck exists, move all cards to top hierarchy, this ensures cards are still appropriately compared and updated. 
+    card_ids = invoke_ac('findCards', query=f'deck:{deck_name}') 
+    invoke_ac('changeDeck', cards=card_ids, deck=f"{deck_name}")
+
     notes = csv_to_ac_notes(csv_path, deck_name, note_type)
 
     # Create the deck, if it already exists this will not overwrite it
@@ -185,6 +190,16 @@ def send_to_anki_connect(
 
     print('[+] Removing deleted tags from notes')
     ac_remove_tags(new_notes_to_update, note_info_results)
+
+
+def sort_decks(deckname, source_field):
+    card_ids = invoke_ac('findCards', query=f'deck:{deckname}') ### gets list of card ids
+    card_info = invoke_ac('cardsInfo', cards=card_ids) ### inputs list of card ids and returns miscellaneous information for each card
+
+    for card in card_info:
+        source_name = card['fields'][source_field].get("value") ### gets the deck formatting from source_field
+        card_id = card['cardId']
+        invoke_ac('changeDeck', cards=[card_id], deck=f"{deckname}::{str(source_name)}") ### Moves card to deck referenced in source field, if deck doesnt exist, creates it.
 
 
 def download_csv(sheet_url):
@@ -269,6 +284,10 @@ def parse_arguments():
         '--note',
         help='the note type to import',
         required=True)
+    parser.add_argument(
+        '-s',
+        '--sort',
+        help='sort cards into decks according to this field, enter as str')
 
     parser.add_argument(
         '--no-anki-connect',
@@ -352,8 +371,19 @@ def main():
             csv_path,
             args.deck,
             args.note)
-        print('[+] Syncing')
-        invoke_ac("sync")
+
+        if args.sort:
+            deck = args.deck
+            source_field = args.sort
+            print('[+] Sorting decks')
+            sort_decks(str(deck), source_field)
+
+            print('[+] Syncing')
+            invoke_ac("sync")
+
+        else:
+            print('[+] Syncing')
+            invoke_ac("sync")
 
     # If we downloaded this file from a URL, clean it up
     if args.url:
