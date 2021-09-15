@@ -128,9 +128,9 @@ Front2, Back2, Source2, Tags
 ```
 
 ### Deck formatting
-Deck formatting in anki is hierarchical using a `::` to denote branches. E.g. `Deck::Deck 2::Deck 3::Deck 4`. Where `Deck 1` is in the top of the hierarchy and each consecutive deck is a subdeck of the one above.
+Deck formatting in anki is hierarchical using a `::` to denote branches. E.g. `Deck::Deck 2::Deck 3::Deck 4`. Where `Deck` is in the top of the hierarchy and each consecutive deck is a subdeck of the one above.
 
-In the table the top deck, in this case `Deck 1`, does not need to be included because that destination is already provided via the option `--deck`. I.e. table should look like this.
+In the table the top deck, in this case `Deck`, does not need to be included because that destination is already provided via the option `--deck`. I.e. table should look like this.
 
 ``` 
 Front, 	Back, 	Source, 		Tags
