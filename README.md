@@ -128,19 +128,19 @@ Front2, Back2, Source2, Tags
 ```
 
 ### Deck formatting
-Deck formatting in anki is hierarchical using a `::` to denote branches. E.g. `Deck 1::Deck 2::Deck 3::Deck 4`. Where `Deck 1` is in the top of the hierarchy and each consecutive deck is a subdeck of the one above.
+Deck formatting in anki is hierarchical using a `::` to denote branches. E.g. `Deck::Deck 2::Deck 3::Deck 4`. Where `Deck 1` is in the top of the hierarchy and each consecutive deck is a subdeck of the one above.
 
 In the table the top deck, in this case `Deck 1`, does not need to be included because that destination is already provided via the option `--deck`. I.e. table should look like this.
 
 ``` 
 Front, 	Back, 	Source, 		Tags
-Front1, Back1, 	Deck 2::Deck3.1, 	Tags
-Front2, Back2, 	Deck 2::Deck3.2, 	Tags
+Front1, Back1, 	Deck 2:: Deck3.1, 	Tags
+Front2, Back2, 	Deck 2:: Deck3.2, 	Tags
 ```
 
 From the command like it would look like
 ```
-python3 anki-csv-importer.py --url url-csv --deck Deck --sort "Source" --note Läkarkunskaper
+python3 anki-csv-importer.py --url url-csv --deck Deck --sort "Source" --note note-type
 ```
 
 
