@@ -22,9 +22,7 @@ Imports a local CSV file or a remote CSV file at a URL (including files stored i
 ## Usage
 
 ```
-usage: anki-csv-importer.py [-h] [-p PATH] [-u URL] -d DECK -n NOTE
-                            [--no-anki-connect] [-c COL] [--allow-html]
-                            [--skip-header]
+usage: anki-csv-importer.py [-h] [-p PATH] [-u URL] -d DECK -n NOTE [-s SORT] [--no-anki-connect] [-c COL] [--allow-html] [--skip-header]
 
 Import a local or remote CSV file into Anki
 
@@ -34,14 +32,12 @@ optional arguments:
   -u URL, --url URL     the URL of the remote CSV file
   -d DECK, --deck DECK  the name of the deck to import the sheet to
   -n NOTE, --note NOTE  the note type to import
-  --no-anki-connect     write notes directly to Anki DB without using
-                        AnkiConnect
-  -c COL, --col COL     the path to the .anki2 collection (only when using
-                        --no-anki-connect)
-  --allow-html          render HTML instead of treating it as plaintext (only
-                        when using --no-anki-connect)
-  --skip-header         skip first row of CSV (only when using --no-anki-
-                        connect)
+  -s SORT, --sort SORT  sort cards into decks according to this field, enter as str
+  --no-anki-connect     write notes directly to Anki DB without using AnkiConnect
+  -c COL, --col COL     the path to the .anki2 collection (only when using --no-anki-connect)
+  --allow-html          render HTML instead of treating it as plaintext (only when using --no-anki-connect)
+  --skip-header         skip first row of CSV (only when using --no-anki-connect)
+
 ```
 
 ## Instructions
@@ -121,6 +117,33 @@ question2,answer2,some_field1,tags1
 
 If the CSV contains more columns than the number of fields in the specified note plus one (for the tags field), they will be ignored. If there are less columns in the CSV than in the note, they will be blank in the note.
 
+## Deck sorting
+
+To automatically sort the table into decks some special formatting is needed. The note type needs to have a field with the same name as the column with deck formatting. E.g. Using a note type with 3 fields, (tags are a 4th field that are always included without needing to add it to particular note types). The fields for this note type are; Front, Back, and Source. Source will be the column containing deck formatting. The table should then look like this.
+
+```
+Front, Back, Source, Tags
+Front1, Back1, Source1, Tags
+Front2, Back2, Source2, Tags
+```
+
+### Deck formatting
+Deck formatting in anki is hierarchical using a `::` to denote branches. E.g. `Deck::Deck 2::Deck 3::Deck 4`. Where `Deck` is in the top of the hierarchy and each consecutive deck is a subdeck of the one above.
+
+In the table the top deck, in this case `Deck`, does not need to be included because that destination is already provided via the option `--deck`. I.e. table should look like this.
+
+``` 
+Front, 	Back, 	Source, 		Tags
+Front1, Back1, 	Deck 2:: Deck3.1, 	Tags
+Front2, Back2, 	Deck 2:: Deck3.2, 	Tags
+```
+
+From the command like it would look like
+```
+python3 anki-csv-importer.py --url url-csv --deck Deck --sort "Source" --note note-type
+```
+
+
 ## HTML Formatting
 
 HTML formatting is enabled when using AnkiConnect and currently cannot be disabled.
@@ -144,6 +167,7 @@ This is the default behavior of Anki's `TextImporter`:
 - If you would like to keep your Anki deck continuously in sync with a remote CSV file, setup a cron job on MacOS and Linux or a scheduled task on Windows to run the command at some regular interval.
   - When using AnkiConnect, this requires you to keep Anki constantly open, or launch it in your cron job. There are various solutions on different platforms to do this while hiding the window. For example, on MacOS you can use [this solution](https://apple.stackexchange.com/a/349641) combined with minimizing the window or moving it to an unused desktop, and for Windows you can use applications like [RBTray](http://rbtray.sourceforge.net/).
 - Use the [Add row to Google Sheets](https://chrome.google.com/webstore/detail/add-row-to-google-sheets/baikkcmfolbapkeefcdccadmelcnijcd) extension to add questions to a Google Sheet while you browse the web, and then use this script to keep that Sheet in sync with Anki
+- Deck sorting has not been tested without Anki-connect
 
 ## TODO
 
