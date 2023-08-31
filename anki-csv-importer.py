@@ -5,6 +5,7 @@ import csv
 import requests
 import os
 import tempfile
+import codecs
 
 ANKI_CONNECT_URL = 'http://localhost:8765'
 
@@ -44,11 +45,11 @@ def invoke_multi_ac(multi_actions):
     return results
 
 
-def csv_to_ac_notes(csv_path, deck_name, note_type):
+def csv_to_ac_notes(csv_path, csv_delimiter, deck_name, note_type):
     notes = []
     index_to_field_name = {}
     with open(csv_path) as csvfile:
-        reader = csv.reader(csvfile)
+        reader = csv.reader(csvfile, delimiter=csv_delimiter)
         for i, row in enumerate(reader):
             fields = {}
             tags = None
@@ -155,10 +156,11 @@ def ac_remove_tags(notes_to_update, note_info_results):
 
 def send_to_anki_connect(
         csv_path,
+        csv_delimiter,
         deck_name,
         note_type):
     # TODO: Audio, images
-    notes = csv_to_ac_notes(csv_path, deck_name, note_type)
+    notes = csv_to_ac_notes(csv_path, csv_delimiter, deck_name, note_type)
 
     # Create the deck, if it already exists this will not overwrite it
     invoke_ac('createDeck', deck=deck_name)
@@ -271,6 +273,12 @@ def parse_arguments():
         required=True)
 
     parser.add_argument(
+        '-dlim',
+        '--delimiter',
+        type=str,
+        default=',',
+        help='the CSV delimiter to use (default is comma)')
+    parser.add_argument(
         '--no-anki-connect',
         help='write notes directly to Anki DB without using AnkiConnect',
         action='store_true')
@@ -298,6 +306,13 @@ def validate_args(args):
     if not (args.path or args.url):
         print('[E] You must specify either --path or --url')
         exit(1)
+
+    if len(args.delimiter) > 1:
+        if len(args.delimiter) == 2 and args.delimiter.startswith("\\"):
+            args.delimiter = codecs.decode(args.delimiter, "unicode_escape")
+        else:
+            print('[E] The delimiter must be a single character')
+            exit(1)
 
     if args.no_anki_connect:
         if not args.col:
@@ -350,6 +365,7 @@ def main():
     else:
         send_to_anki_connect(
             csv_path,
+            args.delimiter,
             args.deck,
             args.note)
         print('[+] Syncing')
