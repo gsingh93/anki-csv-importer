@@ -23,8 +23,8 @@ Imports a local CSV file or a remote CSV file at a URL (including files stored i
 
 ```
 usage: anki-csv-importer.py [-h] [-p PATH] [-u URL] -d DECK -n NOTE
-                            [--no-anki-connect] [-c COL] [--allow-html]
-                            [--skip-header]
+                            [-dlim DELIMITER] [--no-anki-connect] [-c COL]
+                            [--allow-html] [--skip-header]
 
 Import a local or remote CSV file into Anki
 
@@ -34,6 +34,8 @@ optional arguments:
   -u URL, --url URL     the URL of the remote CSV file
   -d DECK, --deck DECK  the name of the deck to import the sheet to
   -n NOTE, --note NOTE  the note type to import
+  -dlim DELIMITER, --delimiter DELIMITER
+                        the CSV delimiter to use (default is comma)
   --no-anki-connect     write notes directly to Anki DB without using
                         AnkiConnect
   -c COL, --col COL     the path to the .anki2 collection (only when using
